@@ -4,7 +4,7 @@ El cerebro humano está programado evolutivamente para sobrevivir, no para inver
 
 Esta herramienta evalúa la propensión al riesgo y los atajos mentales del usuario, generando un mapa de vulnerabilidades clínico y recomendando estrategias mecánicas de mitigación.
 
-🔗 **[Prueba la aplicación en vivo aquí] (AQUÍ_PON_TU_ENLACE_DE_GITHUB_PAGES)**
+🔗 **[Prueba la aplicación en vivo aquí] https://despliegatuscolores-ux.github.io/CampusWealth-Lab/**
 
 ---
 
