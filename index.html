@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusWealth Lab | Behavioral Finance 101</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        campus: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1', // Indigo 500
+                            600: '#4f46e5', // Indigo 600
+                            800: '#3730a3',
+                            900: '#312e81',
+                            950: '#1e1b4b',
+                        },
+                        slate: {
+                            850: '#152033',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        [x-cloak] { display: none !important; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #475569; }
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease, transform 0.3s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(10px); }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-slate-900 dark:text-gray-100 font-sans antialiased transition-colors duration-300" 
+      x-data="campusWealthApp()" 
+      x-init="initApp()"
+      :class="{ 'dark': isDarkMode }">
+
+    <!-- Navegación -->
+    <nav class="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-gray-200 dark:border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fa-solid fa-graduation-cap text-campus-600 dark:text-campus-500 text-2xl mr-3"></i>
+                    <span class="font-bold text-xl tracking-tight text-gray-900 dark:text-white">Campus<span class="text-campus-600 dark:text-campus-500">Wealth</span> Lab</span>
+                </div>
+                
+                <!-- Menú Desktop -->
+                <div class="hidden md:flex items-center space-x-1">
+                    <template x-for="tab in tabs" :key="tab.id">
+                        <button @click="changeTab(tab.id)" 
+                                :class="currentTab === tab.id ? 'bg-campus-50 text-campus-700 dark:bg-slate-800 dark:text-campus-400' : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-slate-800'"
+                                class="px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200">
+                            <i :class="tab.icon" class="mr-2"></i><span x-text="tab.name"></span>
+                        </button>
+                    </template>
+                    <button @click="toggleTheme()" class="ml-4 p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-slate-800 rounded-full transition-colors">
+                        <i class="fa-solid" :class="isDarkMode ? 'fa-sun' : 'fa-moon'"></i>
+                    </button>
+                </div>
+
+                <!-- Menú Móvil -->
+                <div class="flex items-center md:hidden">
+                    <button @click="toggleTheme()" class="mr-2 p-2 text-gray-500 dark:text-gray-400">
+                        <i class="fa-solid" :class="isDarkMode ? 'fa-sun' : 'fa-moon'"></i>
+                    </button>
+                    <button @click="mobileMenuOpen = !mobileMenuOpen" class="text-gray-600 dark:text-gray-300">
+                        <i class="fa-solid fa-bars text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div x-show="mobileMenuOpen" x-cloak class="md:hidden bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-800">
+            <div class="px-2 pt-2 pb-3 space-y-1">
+                <template x-for="tab in tabs" :key="tab.id">
+                    <button @click="changeTab(tab.id); mobileMenuOpen = false" 
+                            :class="currentTab === tab.id ? 'bg-campus-50 text-campus-700 dark:bg-slate-800 dark:text-campus-400' : 'text-gray-600 dark:text-gray-300'"
+                            class="block w-full text-left px-3 py-2 rounded-md text-base font-medium">
+                        <i :class="tab.icon" class="mr-2 w-5 text-center"></i><span x-text="tab.name"></span>
+                    </button>
+                </template>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 custom-scrollbar">
+
+        <!-- ========================================== -->
+        <!-- AULA 1: INTRO Y TEST (DIAGNÓSTICO)         -->
+        <!-- ========================================== -->
+        <div x-show="currentTab === 'diagnostic'" x-transition:enter="fade-enter-active" x-transition:enter-start="fade-enter-from" x-cloak>
+            
+            <div x-show="!quizStarted && !quizCompleted" class="text-center max-w-3xl mx-auto py-12">
+                <div class="inline-block p-4 rounded-full bg-campus-100 dark:bg-campus-900/30 text-campus-600 dark:text-campus-500 mb-6">
+                    <i class="fa-solid fa-book-open-reader text-4xl"></i>
+                </div>
+                <h1 class="text-4xl font-extrabold tracking-tight sm:text-5xl mb-6 text-gray-900 dark:text-white">
+                    Clase 1: <span class="text-transparent bg-clip-text bg-gradient-to-r from-campus-500 to-purple-600">Tu Cerebro vs. Tu Dinero</span>
+                </h1>
+                <p class="text-lg text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
+                    Bienvenidos al laboratorio. Antes de que empecéis a ganar sueldos reales o a meter vuestros ahorros en la última criptomoneda de moda de TikTok, necesito que conozcáis vuestros propios bugs mentales. Este test clínico evaluará qué atajos mentales os están haciendo perder dinero.
+                </p>
+                <button @click="startQuiz()" class="px-8 py-4 bg-campus-600 hover:bg-campus-700 text-white rounded-lg font-semibold text-lg shadow-lg transition-all transform hover:-translate-y-1">
+                    Comenzar Evaluación Inicial
+                </button>
+            </div>
+
+            <div x-show="quizCompleted" class="text-center max-w-2xl mx-auto py-20">
+                <i class="fa-solid fa-check-double text-5xl text-campus-500 mb-6"></i>
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">Evaluación Registrada</h2>
+                <p class="text-gray-600 dark:text-gray-400 mb-8">
+                    Tus notas están subidas al campus virtual (guardadas localmente en tu navegador). Si crees que has aprendido la lección y quieres intentar el test de nuevo, puedes borrar tu expediente.
+                </p>
+                <button @click="resetQuiz()" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-gray-200 text-white rounded-lg font-bold shadow transition-colors">
+                    Borrar Expediente y Repetir Test
+                </button>
+            </div>
+
+            <!-- Interfaz del Test -->
+            <div x-show="quizStarted && !quizCompleted" class="max-w-3xl mx-auto bg-white dark:bg-slate-850 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-800 overflow-hidden">
+                <div class="bg-gray-50 dark:bg-slate-800 px-6 py-4 border-b border-gray-100 dark:border-slate-700 flex justify-between items-center">
+                    <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Pregunta de Evaluación</span>
+                    <span class="text-sm font-bold text-campus-600 dark:text-campus-400" x-text="`${currentQuestionIndex + 1} / ${questions.length}`"></span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-slate-700 h-2">
+                    <div class="bg-campus-500 h-2 transition-all duration-500 ease-out" :style="`width: ${((currentQuestionIndex) / questions.length) * 100}%`"></div>
+                </div>
+                
+                <div class="p-8">
+                    <h3 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white leading-snug" x-text="questions[currentQuestionIndex].text"></h3>
+                    
+                    <div class="space-y-4">
+                        <template x-for="(option, index) in questions[currentQuestionIndex].options" :key="index">
+                            <button @click="selectAnswer(option)" 
+                                    class="w-full text-left p-5 rounded-xl border-2 border-gray-100 dark:border-slate-700 hover:border-campus-500 dark:hover:border-campus-500 hover:bg-campus-50 dark:hover:bg-slate-800 transition-all group flex items-center justify-between">
+                                <span class="text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white font-medium" x-text="option.text"></span>
+                                <i class="fa-solid fa-chevron-right text-gray-300 dark:text-gray-600 group-hover:text-campus-500 transition-colors"></i>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- AULA 2: EXPEDIENTE ACADÉMICO (RESULTADOS)  -->
+        <!-- ========================================== -->
+        <div x-show="currentTab === 'results'" x-transition:enter="fade-enter-active" x-transition:enter-start="fade-enter-from" x-cloak>
+            <div x-show="!quizCompleted" class="text-center py-20">
+                <i class="fa-solid fa-lock text-5xl text-gray-300 dark:text-slate-600 mb-4"></i>
+                <h2 class="text-2xl font-bold text-gray-600 dark:text-gray-400">Expediente Bloqueado</h2>
+                <p class="text-gray-500 mt-2">Debes completar el test inicial para ver tu radiografía cognitiva.</p>
+                <button @click="changeTab('diagnostic')" class="mt-6 text-campus-600 hover:text-campus-700 font-medium underline">Ir al Test</button>
+            </div>
+
+            <div x-show="quizCompleted">
+                <div class="flex flex-col md:flex-row gap-8">
+                    <!-- Columna Gráfico -->
+                    <div class="w-full md:w-1/2 bg-white dark:bg-slate-850 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-800">
+                        <h2 class="text-xl font-bold mb-2 flex items-center"><i class="fa-solid fa-radar mr-2 text-campus-500"></i> Tu Radiografía Cognitiva</h2>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Puntuación porcentual de tus vulnerabilidades. Cuanto más lleno, más en peligro están tus ahorros.</p>
+                        <div class="relative h-80 w-full flex justify-center items-center">
+                            <canvas id="biasRadarChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Columna Análisis -->
+                    <div class="w-full md:w-1/2 space-y-4">
+                        <h2 class="text-xl font-bold mb-4">Análisis de Tus "Bugs" Mentales</h2>
+                        <div class="h-[400px] overflow-y-auto custom-scrollbar pr-2 space-y-4">
+                            <template x-for="(score, biasKey) in calculatedBiases" :key="biasKey">
+                                <div class="bg-white dark:bg-slate-850 p-5 rounded-xl border border-gray-100 dark:border-slate-800 shadow-sm relative overflow-hidden">
+                                    <div class="absolute left-0 top-0 bottom-0 w-1" :class="getSeverityColor(score)"></div>
+                                    
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h4 class="font-bold text-gray-900 dark:text-white capitalize" x-text="biasDefinitions[biasKey].name"></h4>
+                                        <span class="px-2 py-1 rounded text-xs font-bold" :class="getSeverityBg(score)" x-text="score + '%'"></span>
+                                    </div>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-3" x-text="biasDefinitions[biasKey].desc"></p>
+                                    <div class="bg-gray-50 dark:bg-slate-800 p-3 rounded-lg text-sm border-l-2 border-campus-500">
+                                        <span class="font-semibold text-gray-700 dark:text-gray-300"><i class="fa-solid fa-mobile-screen text-campus-500 mr-1"></i> En tu día a día:</span>
+                                        <span class="text-gray-600 dark:text-gray-400" x-text="biasDefinitions[biasKey].example"></span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- AULA 3: APUNTES DE ESTUDIO (TOOLKIT)       -->
+        <!-- ========================================== -->
+        <div x-show="currentTab === 'toolkit'" x-transition:enter="fade-enter-active" x-transition:enter-start="fade-enter-from" x-cloak>
+            <div class="mb-8">
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-3">Apuntes de Mitigación</h2>
+                <p class="text-gray-600 dark:text-gray-400">Fórmulas prácticas (frameworks) que os exijo aplicar antes de tocar el botón de "Comprar" en cualquier app.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Herramienta 1: Unfollow -->
+                <div class="bg-white dark:bg-slate-850 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 hover:shadow-md transition-shadow">
+                    <div class="w-12 h-12 bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 rounded-lg flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-users-slash"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Dieta de Desintoxicación Social</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Mitiga el <strong>Efecto Manada (FOMO) y Efecto Halo</strong>. Tu feed dicta lo que compras.</p>
+                    <div class="space-y-2 mt-4 text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-slate-800 p-4 rounded-lg">
+                        <p><i class="fa-solid fa-xmark text-red-500 mr-2"></i> Deja de seguir a "Finfluencers" que prometen rendimientos rápidos, enseñan lamborghinis o te dicen qué cripto comprar hoy.</p>
+                        <p><i class="fa-solid fa-check text-green-500 mr-2"></i> Sigue a educadores financieros que te enseñan *cómo* leer un balance, no *qué* comprar.</p>
+                    </div>
+                </div>
+
+                <!-- Herramienta 2: 48h -->
+                <div class="bg-white dark:bg-slate-850 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 hover:shadow-md transition-shadow">
+                    <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-clock"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">La Regla de las 48 Horas (Cooling-off)</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Combate el <strong>Descuento Hiperbólico y las Compras Impulsivas</strong>. Frena la dopamina instantánea.</p>
+                    <div class="bg-blue-50 dark:bg-slate-800 p-4 rounded-lg">
+                        <ul class="text-sm space-y-2 text-gray-700 dark:text-gray-300">
+                            <li><i class="fa-regular fa-square text-blue-500 mr-2"></i> Para ropa, zapatillas o gadgets > 100€: Déjalo en el carrito virtual 48 horas.</li>
+                            <li><i class="fa-regular fa-square text-blue-500 mr-2"></i> Para inversiones "urgentes": Si tienes que comprarlo HOY para no perderte la subida, es una lotería, no una inversión. Espera 48h.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Herramienta 3: Abogado -->
+                <div class="bg-white dark:bg-slate-850 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 hover:shadow-md transition-shadow">
+                    <div class="w-12 h-12 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-comments-dollar"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Test de Reddit Hater</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Evita el <strong>Sesgo de Confirmación</strong>. Tu algoritmo te mostrará solo buenas noticias sobre lo que ya quieres comprar.</p>
+                    <div class="p-3 border-l-4 border-red-500 bg-red-50 dark:bg-slate-800 text-sm text-gray-700 dark:text-gray-300 italic">
+                        "Antes de meter dinero en la empresa X o la moneda Y, mi tarea obligatoria es buscar en Google y Reddit: 'Por qué [Empresa X] es una estafa/va a fracasar' y leer los peores comentarios."
+                    </div>
+                </div>
+
+                <!-- Herramienta 4: Autopsia -->
+                <div class="bg-white dark:bg-slate-850 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 hover:shadow-md transition-shadow">
+                    <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Automatización de DCA (Dollar Cost Averaging)</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Neutraliza la <strong>Ilusión de Control y el Exceso de Confianza</strong>. Asume que no puedes predecir el futuro.</p>
+                    <div class="grid grid-cols-1 gap-2 text-sm">
+                        <div class="bg-gray-100 dark:bg-slate-800 p-2 rounded">1. Programa una transferencia el día 1 de cada mes (ej. 50€).</div>
+                        <div class="bg-gray-100 dark:bg-slate-800 p-2 rounded">2. Compra un índice global (ETF o Fondo) automáticamente.</div>
+                        <div class="bg-gray-100 dark:bg-slate-800 p-2 rounded">3. Borra la app del móvil. No mires los gráficos.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- AULA 4: EXAMEN SORPRESA (SIMULADOR)        -->
+        <!-- ========================================== -->
+        <div x-show="currentTab === 'simulator'" x-transition:enter="fade-enter-active" x-transition:enter-start="fade-enter-from" x-cloak>
+            
+            <div x-show="!quizCompleted" class="text-center py-20">
+                <i class="fa-solid fa-file-circle-xmark text-5xl text-gray-300 dark:text-slate-600 mb-4"></i>
+                <h2 class="text-2xl font-bold text-gray-600 dark:text-gray-400">Examen Bloqueado</h2>
+                <p class="text-gray-500 mt-2">Realiza la evaluación de la Clase 1 para poder acceder al simulador.</p>
+                <button @click="changeTab('diagnostic')" class="mt-6 px-4 py-2 bg-campus-600 text-white rounded-lg">Realizar Evaluación</button>
+            </div>
+
+            <div x-show="quizCompleted" class="max-w-4xl mx-auto">
+                <div class="mb-8 text-center">
+                    <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-3">Examen Sorpresa Práctico</h2>
+                    <p class="text-gray-600 dark:text-gray-400">3 situaciones financieras reales. El sistema os calificará en base a las debilidades que detectamos en vuestro test inicial.</p>
+                </div>
+
+                <div class="space-y-8">
+                    <template x-for="(scenario, index) in scenarios" :key="index">
+                        <div class="bg-white dark:bg-slate-850 rounded-2xl shadow-md border border-gray-200 dark:border-slate-700 overflow-hidden">
+                            <div class="bg-slate-800 text-white p-4 flex items-center justify-between">
+                                <span class="font-bold flex items-center"><i class="fa-solid fa-pen-clip text-yellow-400 mr-2"></i> Caso Práctico <span x-text="index + 1" class="ml-1"></span></span>
+                                <span class="text-xs font-mono bg-slate-900 px-2 py-1 rounded text-gray-300">Dificultad: Alta</span>
+                            </div>
+                            <div class="p-6">
+                                <p class="text-lg font-medium text-gray-900 dark:text-white mb-6" x-text="scenario.context"></p>
+                                
+                                <div class="space-y-3" x-show="!scenario.answered">
+                                    <template x-for="(action, aIdx) in scenario.actions" :key="aIdx">
+                                        <button @click="handleScenarioAnswer(index, action)" 
+                                                class="w-full text-left p-4 border border-gray-200 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors">
+                                            <span x-text="action.text"></span>
+                                        </button>
+                                    </template>
+                                </div>
+
+                                <div x-show="scenario.answered" x-transition class="mt-4 p-5 rounded-lg border" :class="scenario.feedbackStyle">
+                                    <h4 class="font-bold mb-2 flex items-center">
+                                        <i :class="scenario.feedbackIcon" class="mr-2"></i> Nota del Profesor:
+                                    </h4>
+                                    <p class="text-sm" x-html="scenario.feedbackText"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                <div class="text-center mt-8 pb-10">
+                    <button @click="resetSimulator()" class="text-campus-600 dark:text-campus-400 hover:underline"><i class="fa-solid fa-rotate-right mr-1"></i> Repetir Examen</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- AULA 5: PLAN DE GRADUACIÓN                 -->
+        <!-- ========================================== -->
+        <div x-show="currentTab === 'plan'" x-transition:enter="fade-enter-active" x-transition:enter-start="fade-enter-from" x-cloak>
+            <div class="max-w-4xl mx-auto">
+                <div class="flex justify-between items-end mb-6">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Tus Mandamientos Financieros</h2>
+                        <p class="text-gray-600 dark:text-gray-400">Las reglas que prometes cumplir al cobrar tu primer sueldo real.</p>
+                    </div>
+                    <button @click="exportPlan()" class="hidden md:flex px-4 py-2 bg-slate-800 dark:bg-white text-white dark:text-slate-900 font-bold rounded-lg shadow hover:bg-slate-700 dark:hover:bg-gray-200 transition-colors items-center">
+                        <i class="fa-solid fa-file-arrow-down mr-2"></i> Descargar Tesis (.txt)
+                    </button>
+                </div>
+
+                <div class="bg-white dark:bg-slate-850 rounded-2xl shadow-lg border border-gray-200 dark:border-slate-700 p-6 md:p-8">
+                    
+                    <div x-show="quizCompleted" class="mb-6 bg-campus-50 dark:bg-slate-800 p-4 rounded-lg border border-campus-100 dark:border-slate-600">
+                        <h4 class="text-sm font-bold text-campus-800 dark:text-campus-300 mb-2"><i class="fa-solid fa-chalkboard-user mr-1"></i> Mi recomendación directa para ti basándome en tu test:</h4>
+                        <p class="text-sm text-gray-700 dark:text-gray-300" x-text="getPersonalizedRuleSuggestion()"></p>
+                    </div>
+
+                    <textarea x-model="userPlan" 
+                              class="w-full h-96 bg-gray-50 dark:bg-slate-900 border border-gray-300 dark:border-slate-600 rounded-xl p-6 font-mono text-sm focus:ring-2 focus:ring-campus-500 focus:outline-none dark:text-gray-300 custom-scrollbar resize-none"
+                              placeholder="Escribe tus reglas..."></textarea>
+                    
+                    <button @click="exportPlan()" class="md:hidden mt-4 w-full px-4 py-3 bg-slate-800 dark:bg-white text-white dark:text-slate-900 font-bold rounded-lg shadow hover:bg-slate-700 dark:hover:bg-gray-200 transition-colors flex justify-center items-center">
+                        <i class="fa-solid fa-file-arrow-down mr-2"></i> Descargar Tesis
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Script de Aplicación -->
+    <script>
+        function campusWealthApp() {
+            return {
+                isDarkMode: true,
+                currentTab: 'diagnostic',
+                mobileMenuOpen: false,
+                quizStarted: false,
+                quizCompleted: false,
+                currentQuestionIndex: 0,
+                chartInstance: null,
+                userPlan: "MIS MANDAMIENTOS FINANCIEROS DE GRADUACIÓN\n==============================================\n\n1. Cuando gane mi primer sueldo, automatizaré el [10-20]% directamente a ahorros/inversión el día 1.\n2. Borraré las apps de inversión de la pantalla principal de mi móvil.\n3. Aplicaré la regla de las 48h para ropa, zapatillas y compras impulsivas.\n4. Si veo una inversión en TikTok o Reels, asumo que ya voy tarde y NO compro.\n5. ",
+                
+                tabs: [
+                    { id: 'diagnostic', name: 'Clase 1: Test', icon: 'fa-solid fa-flask' },
+                    { id: 'results', name: 'Expediente', icon: 'fa-solid fa-chart-pie' },
+                    { id: 'toolkit', name: 'Apuntes', icon: 'fa-solid fa-book' },
+                    { id: 'simulator', name: 'Examen', icon: 'fa-solid fa-pen-to-square' },
+                    { id: 'plan', name: 'Tesis', icon: 'fa-solid fa-file-signature' }
+                ],
+
+                // Definiciones adaptadas a jóvenes/universitarios
+                biasDefinitions: {
+                    overconfidence: { name: 'Exceso de confianza', desc: 'Creer que eres el Lobo de Wall Street porque acertaste en una criptomoneda o zapato de reventa.', example: 'Pensar que vas a hacerte rico haciendo day-trading desde clase en vez de estudiar.' },
+                    loss_aversion: { name: 'Aversión a las pérdidas', desc: 'Te duele tanto perder que aguantas inversiones basuras cruzando los dedos para "quedar a pre" (empatar).', example: 'No vender unos tokens que cayeron un 60% porque "hasta que no vendo no pierdo". Sí pierdes, el dinero ya no está.' },
+                    confirmation: { name: 'Sesgo de confirmación', desc: 'Solo buscas info que te da la razón. Tu algoritmo de TikTok te aísla en una burbuja.', example: 'Meter ahorros en una empresa dudosa y solo leer los foros de fans de esa empresa ignorando las críticas.' },
+                    anchoring: { name: 'Sesgo de anclaje', desc: 'Fijar tu cerebro en un precio inicial aleatorio. "¡Llegó a valer 100, ahora a 20 está regalado!".', example: 'Comprar ropa de marca que tiene un cartel gigante de "-70% descuento", cuando el precio final sigue siendo caro para tu presupuesto.' },
+                    herd: { name: 'Efecto Manada (FOMO)', desc: 'Miedo a quedarte fuera. Haces cosas financieras estúpidas solo porque tus amigos lo hacen.', example: 'Comprar un NFT o moneda perrito en máximos históricos porque todos en Discord están hablando de eso.' },
+                    sunk_cost: { name: 'Falacia del Costo Hundido', desc: 'Seguir metiendo dinero o tiempo en algo que fracasa, solo porque ya le metiste mucho antes.', example: 'Seguir pagando una suscripción cara que no usas "para obligarte a usarla algún día".' },
+                    control_illusion: { name: 'Ilusión de control', desc: 'Creer que mirar tu app del banco o de criptos 20 veces al día hará que suba.', example: 'Estar pegado a las gráficas del móvil de fiesta en lugar de disfrutar, pensando que controlas el mercado.' },
+                    hyperbolic: { name: 'Descuento hiperbólico', desc: 'El cerebro joven quiere dopamina YA. Prefieres 50€ hoy que 200€ en 3 años.', example: 'Gastar lo ahorrado del verano en ropa cara el primer mes de uni, en lugar de invertirlo para el viaje de fin de grado.' }
+                },
+
+                scores: { overconfidence: 0, loss_aversion: 0, confirmation: 0, anchoring: 0, herd: 0, sunk_cost: 0, control_illusion: 0, hyperbolic: 0 },
+                maxScores: { overconfidence: 0, loss_aversion: 0, confirmation: 0, anchoring: 0, herd: 0, sunk_cost: 0, control_illusion: 0, hyperbolic: 0 },
+                calculatedBiases: {},
+
+                // 12 Preguntas con contextos universitarios / Gen Z
+                questions: [
+                    {
+                        text: "1. En tu grupo de colegas (o Discord), todos están ganando dinero rápido con una nueva memecoin y presumen de ello. Tú tienes 300€ ahorrados.",
+                        options: [
+                            { text: "Meto los 300€ corriendo, no quiero ser el pringado que se queda fuera de la ola.", bias: 'herd', weight: 10 },
+                            { text: "Asumo que si ya está en mi grupo de amigos, la ola grande ya pasó. Me quedo los 300€.", bias: 'herd', weight: 0 }
+                        ]
+                    },
+                    {
+                        text: "2. Compraste acciones de NVIDIA (o criptos) con tus primeros ahorros y han subido un 30% en un mes. ¿Qué piensas?",
+                        options: [
+                            { text: "Tengo muy buen ojo para esto, la verdad. Se me da bastante bien leer el mercado.", bias: 'overconfidence', weight: 10 },
+                            { text: "He tenido suerte porque el sector tech entero ha subido en este mes. Pura coincidencia.", bias: 'overconfidence', weight: 0 }
+                        ]
+                    },
+                    {
+                        text: "3. Compraste unas zapatillas edición limitada por 200€ para revenderlas más caras. Pasan los meses, la moda cambia, y en Vinted solo te ofrecen 120€.",
+                        options: [
+                            { text: "No las vendo. No voy a perder 80€, las guardo en el armario hasta que vuelvan a subir.", bias: 'loss_aversion', weight: 10 },
+                            { text: "Las vendo por 120€. Acepto el error y recupero al menos algo de liquidez para otra cosa.", bias: 'loss_aversion', weight: 0 }
+                        ]
+                    },
+                    {
+                        text: "4. Llevas 2 años de los 4 de una carrera que te parece horrible y no tiene salidas que te gusten.",
+                        options: [
+                            { text: "La termino sí o sí. Ya he 'gastado' dos años de mi vida y matrículas, no voy a tirarlos a la basura.", bias: 'sunk_cost', weight: 10 },
+                            { text: "Me cambio ya. Los dos años pasados ya están perdidos, pero puedo salvar los dos que me quedan.", bias: 'sunk_cost', weight: 0 }
+                        ]
+                    },
+                    {
+                        text: "5. Estás en TikTok y ves un vídeo viral explicando por qué una empresa de IA poco conocida va a explotar. Decides investigar:",
+                        options: [
+                            { text: "Busco en Google y YouTube vídeos de otros influencers que confirmen que es un buen proyecto.", bias: 'confirmation', weight: 10 },
+                            { text: "Busco explícitamente 'Por qué [Empresa] es una estafa/burbuja' para ver los riesgos.", bias: 'confirmation', weight: 0 }
+                        ]
+                    },
+                    {
+                        text: "6. Una criptomoneda llegó a valer 100€ en su mejor momento. Hoy vale 10€ tras destaparse escándalos de sus creadores.",
+                        options: [
+                            { text: "Compro. Ha caído un 90%, está tirada de precio. ¡Con que vuelva a 50€ me forro!", bias: 'anchoring', weight: 10 },
+                            { text: "No compro. Que valiera 100€ antes no significa nada ahora que los fundamentos son basura.", bias: 'anchoring', weight: 0 }
+                        ]
+                    },
+                    {
+                        text: "7. Te dan 500€ de beca (o un regalo de tu abuela). Te da para un viaje genial este finde, pero tienes el objetivo de ahorrar para independizarte al acabar la carrera.",
+                        options: [
+                            { text: "Me voy de viaje. La vida son dos días y el dinero está para disfrutarlo AHORA.", bias: 'hyperbolic', weight: 10 },
+                            { text: "Meto 400€ a mi cuenta de ahorro intocable y solo uso 100€ para tomar algo.", bias: 'hyperbolic', weight: 0 }
+                        ]
+                    },
+                    {
+                        text: "8. ¿Cuántas veces al día abres la app de tu banco, de criptos o de bolsa para ver cómo va tu saldo?",
+                        options: [
+                            { text: "Varias veces al día, necesito estar atento a los movimientos para reaccionar rápido.", bias: 'control_illusion', weight: 10 },
+                            { text: "Casi nunca, quizás una vez al mes. Mis ahorros van automáticos y a largo plazo.", bias: 'control_illusion', weight: 0 }
+                        ]
+                    },
+                    {
+                        text: "9. Pagaste 150€ por el abono de un festival para este fin de semana. Amanece lloviendo a cántaros y tus dos grupos favoritos cancelan.",
+                        options: [
+                            { text: "Voy igual, me pongo un chubasquero. ¡Son 150€! Tengo que amortizarlos aunque no lo disfrute.", bias: 'sunk_cost', weight: 10 },
+                            { text: "Me quedo en casa cómodo. El dinero de la entrada ya no me lo devuelven vaya o no vaya.", bias: 'sunk_cost', weight: 0 }
+                        ]
+                    },
+                    {
+                        text: "10. Invertiste en un fondo 'verde' porque su web era chulísima, pero lees una noticia de que realmente financian empresas petroleras en secreto.",
+                        options: [
+                            { text: "Probablemente sea un error de la prensa o una campaña en su contra, me fío de mi instinto inicial.", bias: 'confirmation', weight: 10 },
+                            { text: "Asumo que me comí el marketing y saco el dinero mañana mismo.", bias: 'confirmation', weight: 0 }
+                        ]
+                    },
+                    {
+                        text: "11. Te ofrecen dos opciones para tu dinero de verano:",
+                        options: [
+                            { text: "Pagarme un curso de trading para intentar triplicarlo haciendo operaciones rápidas desde mi cuarto.", bias: 'overconfidence', weight: 10 },
+                            { text: "Meterlo en un fondo índice global aburrido que da un 7% anual y olvidarme.", bias: 'overconfidence', weight: 0 }
+                        ]
+                    },
+                    {
+                        text: "12. Tu pequeña inversión subió 50€. Empiezas a leer en internet que el mercado global va a colapsar (siempre lo dicen).",
+                        options: [
+                            { text: "Vendo todo rápido y cojo los 50€ de beneficio. Más vale pájaro en mano.", bias: 'loss_aversion', weight: 10 },
+                            { text: "No hago caso al ruido. Yo invierto dinero que no necesito para los próximos 10 años.", bias: 'loss_aversion', weight: 0 }
+                        ]
+                    }
+                ],
+
+                scenarios: [
+                    {
+                        context: "Examen 1: Estás estudiando en la biblio y un amigo te reenvía un post de Elon Musk insinuando que la moneda 'TrollCoin' es el futuro. En 10 minutos ha subido un 20%.",
+                        actions: [
+                            { text: "A) Compro algo desde el móvil rápido con el dinero de las cervezas, no puedo quedarme fuera.", impact: "herd" },
+                            { text: "B) Sonrío, apago el móvil y sigo estudiando. Si Musk tuitea algo, la oportunidad ya la explotaron los bots.", impact: "rational" },
+                            { text: "C) Voy corriendo a mirar la gráfica de la moneda cada 5 minutos pensando que puedo encontrar el punto exacto de venta.", impact: "control_illusion" }
+                        ],
+                        answered: false, feedbackStyle: '', feedbackIcon: '', feedbackText: ''
+                    },
+                    {
+                        context: "Examen 2: Pagaste 1.000€ (tus ahorros de camarero) en acciones de 'TechGafas'. El producto es un fracaso y las acciones ahora valen 400€.",
+                        actions: [
+                            { text: "A) No vendo. 'Solo pierdes cuando vendes'. Me quedo dentro aguantando como un campeón hasta recuperar mis 1.000€.", impact: "loss_aversion" },
+                            { text: "B) Vendo, salvo 400€ y lo invierto en un fondo global diversificado y aburrido. Asumo la matrícula del error.", impact: "rational" },
+                            { text: "C) Era una ganga a 1.000, ¡a 400 está regalada! Meto otros 400€ para 'promediar el precio de compra'.", impact: "anchoring" }
+                        ],
+                        answered: false, feedbackStyle: '', feedbackIcon: '', feedbackText: ''
+                    },
+                    {
+                        context: "Examen 3: Has cobrado tus primeras prácticas. Te sobran 200€ al mes. ¿Qué haces?",
+                        actions: [
+                            { text: "A) Me los gasto en salir, cenar y ropa. Ya ahorraré cuando tenga un trabajo 'de verdad' a los 26 o 27.", impact: "hyperbolic" },
+                            { text: "B) Automatizo una orden que el día 1 de cada mes manda 100€ a un fondo de inversión sin que yo lo vea. Los otros 100€ los quemo.", impact: "rational" },
+                            { text: "C) Hago day-trading. Con 200€ al mes, si acierto unas cuantas operaciones, saco más dinero que en las prácticas.", impact: "overconfidence" }
+                        ],
+                        answered: false, feedbackStyle: '', feedbackIcon: '', feedbackText: ''
+                    }
+                ],
+
+                initApp() {
+                    this.questions.forEach(q => {
+                        let maxWeight = 0;
+                        q.options.forEach(opt => {
+                            if (opt.weight > maxWeight) maxWeight = opt.weight;
+                        });
+                        this.maxScores[q.options[0].bias] += maxWeight;
+                    });
+
+                    const savedData = localStorage.getItem('campusWealthData');
+                    if (savedData) {
+                        const parsed = JSON.parse(savedData);
+                        this.calculatedBiases = parsed.biases || {};
+                        this.userPlan = parsed.plan || this.userPlan;
+                        if (Object.keys(this.calculatedBiases).length > 0) {
+                            this.quizCompleted = true;
+                            this.currentTab = 'results';
+                            setTimeout(() => this.renderRadarChart(), 100);
+                        }
+                    }
+
+                    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                        this.isDarkMode = true;
+                    } else {
+                        this.isDarkMode = false;
+                    }
+                },
+
+                toggleTheme() {
+                    this.isDarkMode = !this.isDarkMode;
+                    localStorage.theme = this.isDarkMode ? 'dark' : 'light';
+                    if (this.currentTab === 'results' && this.quizCompleted) {
+                        setTimeout(() => this.renderRadarChart(), 50); 
+                    }
+                },
+
+                changeTab(tabId) {
+                    this.currentTab = tabId;
+                    if (tabId === 'results' && this.quizCompleted) {
+                        setTimeout(() => this.renderRadarChart(), 50);
+                    }
+                },
+
+                startQuiz() {
+                    this.quizStarted = true;
+                    this.currentQuestionIndex = 0;
+                    Object.keys(this.scores).forEach(k => this.scores[k] = 0);
+                },
+
+                selectAnswer(option) {
+                    this.scores[option.bias] += option.weight;
+                    
+                    if (this.currentQuestionIndex < this.questions.length - 1) {
+                        this.currentQuestionIndex++;
+                    } else {
+                        this.finishQuiz();
+                    }
+                },
+
+                finishQuiz() {
+                    this.quizCompleted = true;
+                    Object.keys(this.scores).forEach(key => {
+                        const max = this.maxScores[key];
+                        this.calculatedBiases[key] = max > 0 ? Math.round((this.scores[key] / max) * 100) : 0;
+                        if(this.calculatedBiases[key] === 0) this.calculatedBiases[key] = 10; 
+                    });
+                    this.saveData();
+                    this.changeTab('results');
+                },
+
+                resetQuiz() {
+                    localStorage.removeItem('campusWealthData');
+                    this.quizCompleted = false;
+                    this.quizStarted = false;
+                    this.currentQuestionIndex = 0;
+                    this.calculatedBiases = {};
+                    Object.keys(this.scores).forEach(k => this.scores[k] = 0);
+                    this.resetSimulator();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                },
+
+                saveData() {
+                    localStorage.setItem('campusWealthData', JSON.stringify({
+                        biases: this.calculatedBiases,
+                        plan: this.userPlan
+                    }));
+                },
+
+                renderRadarChart() {
+                    if (this.chartInstance) {
+                        this.chartInstance.destroy();
+                    }
+                    const ctx = document.getElementById('biasRadarChart').getContext('2d');
+                    
+                    const labels = Object.keys(this.calculatedBiases).map(k => this.biasDefinitions[k].name);
+                    const data = Object.values(this.calculatedBiases);
+                    
+                    const textColor = this.isDarkMode ? '#e2e8f0' : '#475569';
+                    const gridColor = this.isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+
+                    this.chartInstance = new Chart(ctx, {
+                        type: 'radar',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Vulnerabilidad Mental (%)',
+                                data: data,
+                                backgroundColor: 'rgba(99, 102, 241, 0.4)', // campus-500
+                                borderColor: 'rgba(99, 102, 241, 1)',
+                                pointBackgroundColor: 'rgba(79, 70, 229, 1)', // campus-600
+                                pointBorderColor: '#fff',
+                                pointHoverBackgroundColor: '#fff',
+                                pointHoverBorderColor: 'rgba(99, 102, 241, 1)',
+                                borderWidth: 2,
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                r: {
+                                    angleLines: { color: gridColor },
+                                    grid: { color: gridColor },
+                                    pointLabels: {
+                                        color: textColor,
+                                        font: { family: 'Inter', size: 11, weight: '600' }
+                                    },
+                                    ticks: { display: false, min: 0, max: 100 }
+                                }
+                            },
+                            plugins: { legend: { display: false } }
+                        }
+                    });
+                },
+
+                getSeverityColor(score) {
+                    if (score >= 70) return 'bg-red-500';
+                    if (score >= 40) return 'bg-yellow-500';
+                    return 'bg-green-500';
+                },
+
+                getSeverityBg(score) {
+                    if (score >= 70) return 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-400';
+                    if (score >= 40) return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-400';
+                    return 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400';
+                },
+
+                handleScenarioAnswer(scenarioIndex, action) {
+                    const scenario = this.scenarios[scenarioIndex];
+                    scenario.answered = true;
+
+                    if (action.impact === 'rational') {
+                        scenario.feedbackStyle = 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-400';
+                        scenario.feedbackIcon = 'fa-solid fa-check-circle';
+                        scenario.feedbackText = '¡Matrícula de Honor! Has usado el Sistema 2 (analítico) para sortear la presión de tu entorno o de la red social de turno.';
+                    } else {
+                        const userBiasScore = this.calculatedBiases[action.impact] || 0;
+                        let warningLevel = '';
+                        
+                        if (userBiasScore >= 70) {
+                            warningLevel = '<strong>SUSPENSO CRÍTICO. Como vimos en tu test, esta es tu debilidad fatal.</strong> ';
+                            scenario.feedbackStyle = 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-400';
+                        } else {
+                            scenario.feedbackStyle = 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-400';
+                        }
+                        
+                        scenario.feedbackIcon = 'fa-solid fa-triangle-exclamation';
+                        scenario.feedbackText = `${warningLevel} Has caído en: <strong>${this.biasDefinitions[action.impact].name}</strong>. Repasa los Apuntes (Toolkit).`;
+                    }
+                },
+
+                resetSimulator() {
+                    this.scenarios.forEach(s => s.answered = false);
+                },
+
+                getPersonalizedRuleSuggestion() {
+                    if(!this.quizCompleted) return "";
+                    let maxBias = Object.keys(this.calculatedBiases).reduce((a, b) => this.calculatedBiases[a] > this.calculatedBiases[b] ? a : b);
+                    
+                    const rules = {
+                        overconfidence: "NOTA DEL PROFESOR: Tienes demasiado ego financiero. Tu regla #1 obligatoria: No harás trading manual. El 100% de tus ahorros irán a fondos automatizados globales.",
+                        loss_aversion: "NOTA DEL PROFESOR: Eres un acumulador emocional de pérdidas. Tu regla #1: Si un activo baja un 15% por fundamentos reales, vendes automáticamente para protegerte de ti mismo.",
+                        confirmation: "NOTA DEL PROFESOR: Vives en una burbuja de TikTok. Tu regla #1: Antes de comprar NADA, debes leer un hilo de Reddit o informe en contra de lo que quieres comprar.",
+                        anchoring: "NOTA DEL PROFESOR: Te engañas con 'descuentos' falsos. Tu regla #1: Evalúa todo por su valor HOY en el mercado, olvida el precio que tú pagaste o el precio inicial al que salió.",
+                        herd: "NOTA DEL PROFESOR: Eres carnaza para el FOMO de Discord. Tu regla #1: Haz un 'unfollow' masivo a todos los influencers de finanzas/crypto. Solo compras activos aburridos mensuales.",
+                        sunk_cost: "NOTA DEL PROFESOR: Te cuesta tirar la toalla. Tu regla #1: Evalúa tu cartera mensualmente preguntando: '¿Volvería a comprar esto HOY al precio actual?'. Si es no, se vende.",
+                        control_illusion: "NOTA DEL PROFESOR: Eres un adicto a mirar las gráficas. Tu regla #1: Borra la app de tu broker/exchange del móvil de lunes a sábado. Solo mírala en tu ordenador el domingo.",
+                        hyperbolic: "NOTA DEL PROFESOR: Vives el hoy demasiado intenso. Tu regla #1: Automatiza que el 15% de tus ingresos vuelen a otra cuenta intocable el mismo día que los cobras. Lo que no ves, no te lo gastas."
+                    };
+
+                    return rules[maxBias] || "NOTA DEL PROFESOR: Tu única regla será automatizar tus ahorros el día 1 y desinstalar las apps financieras de tu móvil.";
+                },
+
+                exportPlan() {
+                    this.saveData(); 
+                    const blob = new Blob([this.userPlan], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    const date = new Date().toISOString().split('T')[0];
+                    link.download = `CampusWealth_Tesis_${date}.txt`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }
+            }
+        }
+    </script>
+</body>
+</html>
