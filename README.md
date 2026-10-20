@@ -1,6 +1,6 @@
 # 🎓 CampusWealth Lab | Behavioral Finance 101
 
-El cerebro humano está programado evolutivamente para sobrevivir, no para invertir. **CampusWealth Lab** es una Single Page Application (SPA) educativa diseñada para enseñar a jóvenes universitarios y nuevos inversores cómo su propio cerebro ("Sistema 1", según Daniel Kahneman) les hace perder dinero mediante heurísticas y sesgos cognitivos.
+El cerebro humano está programado evolutivamente para sobrevivir, no para invertir. **CampusWealth Lab** es una Single Page Application (SPA) educativa diseñada para enseñar a jóvenes universitarios y nuevos inversores cómo su propio cerebro ("Sistema 1", según el psicólogo Daniel Kahneman, Premio Nobel de Economía en 2002) les hace perder dinero mediante heurísticas y sesgos cognitivos.
 
 Esta herramienta evalúa la propensión al riesgo y los atajos mentales del usuario, generando un mapa de vulnerabilidades clínico y recomendando estrategias mecánicas de mitigación.
 
